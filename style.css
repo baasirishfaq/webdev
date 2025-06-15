@@ -1,25 +1,12 @@
-body {
-  background-color: black;
+h1, h2{
+  color: purple;
 }
 
-h1 {
-  color: white;
-  text-align: center;
-  margin: auto;
+.box > p{
+  color: red;
 }
 
-h2{
-    color: white;
-    text-align: center;
-    margin: auto;
-    font-family: cursive;
-}
-.image-container {
-  margin: auto;
-  margin-top: 100px;
-  text-align: center;
+.box > ul{
+  color: blue;
 }
 
-img{
-    border: 5px solid white;
-}
