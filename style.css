@@ -1,12 +1,13 @@
-h1, h2{
-  color: purple;
+.headline{
+  background-color: brown;
+  display: inline;
+
+  /* width and height doesn't work for inline (only works for inline block) */
 }
 
-.box > p{
-  color: red;
+.second{
+  background-color: red;
+  display: inline-block;
+  width: 100px;
+  height: 100px;
 }
-
-.box > ul{
-  color: blue;
-}
-
