@@ -4,35 +4,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agency</title>
-  <link rel="stylesheet" href="./style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <title>Flex Direction</title>
+  <!-- HINT:
+  https://developer.mozilla.org/en-US/docs/Web/CSS/Universal_selectors
+  https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Selectors/Combinators 
+  -->
+  <style>
+    .container {
+      color: white;
+      border: 5px solid gold;
+      display: inline-flex;
+      flex-direction: column;
+    }
+    .container > * {
+      flex-basis: 100px;
+    }
+
+    .red {
+      background-color: #eb4d4b;
+    }
+
+    .orange {
+      background-color: #f0932b;
+    }
+
+    .yellow {
+      background-color: #f6e58d;
+    }
+
+    .green {
+      background-color: #6ab04c;
+    }
+
+    .blue {
+      background-color: #4834d4;
+    }
+
+    .indigo {
+      background-color: #30336b;
+    }
+
+    .purple {
+      background-color: #be2edd;
+    }
+  </style>
 </head>
 
 <body>
-  <div class="main">
-    <img class="logo" src="./assets/images/logo.png" alt="logo">
-    <h1>We are a Creative Design Agency</h1>
-    <div class="left-card"><img class="tile-image" src="./assets/images/beautiful.jpg" alt="hand and flower in water">
-      <h2 class="card-title">Beauty</h2>
-      <p class="card-text">We strive to create the most beautiful websites for all your needs. Working closely with you
-        to
-        design and
-        develop an amazing website for your business.</p>
-    </div>
-
-    <div class="right-card"><img class="tile-image" src="./assets/images/construction.jpg" alt="metal structure">
-      <h2 class="card-title">Construction</h2>
-      <p>Built by our team of professional developers, we ensure the most rigourous and modern websites. Built from
-        scratch using HTML and CSS. Only the best for you.</p>
-    </div>
-
+  <div class="container">
+    <div class="red">Red</div>
+    <div class="orange">Orange</div>
+    <div class="yellow">Yellow</div>
+    <div class="green">Green</div>
+    <div class="blue">Blue</div>
+    <div class="indigo">Indigo</div>
+    <div class="purple">Purple</div>
   </div>
-  <footer>
-    <p>Create. Develop. Design.</p>
-  </footer>
+
 </body>
 
 </html>
