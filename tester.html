@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flappy‑Style Game</title>
+  <style>
+    :root { --bg:#0f172a; --fg:#e2e8f0; --accent:#38bdf8; --accent2:#22c55e; --danger:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial; background: radial-gradient(1000px 600px at 20% 10%, #0b1025, #0f172a 60%); color: var(--fg); display:grid; min-height:100vh; place-items:center; }
+    .wrap { width: min(92vw, 560px); }
+    h1 { margin: 12px 0 6px; font-size: clamp(1.1rem, 2.2vw, 1.6rem); letter-spacing: .5px; opacity:.95; }
+    .hud { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0 10px; }
+    button { background: linear-gradient(180deg, var(--accent), #1991c7); border:none; color:white; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(56,189,248,.35); }
+    button:active { transform: translateY(1px); }
+    .tip { font-size:.9rem; opacity:.8; }
+    canvas { width: 100%; height: auto; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06); background: linear-gradient(180deg, #60a5fa, #93c5fd 60%, #bae6fd); }
+    .score { font-variant-numeric: tabular-nums; font-weight:800; letter-spacing:.5px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Flappy‑Style Game (HTML Canvas)</h1>
+    <div class="hud">
+      <div class="tip">Press <b>Space</b> / click / tap to flap • Avoid pipes • Go for high score</div>
+      <button id="resetBtn" title="Restart (R)">Restart</button>
+    </div>
+    <canvas id="game" width="420" height="640" aria-label="Flappy style game"></canvas>
+    <div class="hud" style="margin-top:10px">
+      <div>Score: <span class="score" id="score">0</span> &nbsp; | &nbsp; Best: <span class="score" id="best">0</span></div>
+      <div class="tip">Tip: Hold for short taps; rhythm > mashing</div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    const cvs = document.getElementById('game');
+    const ctx = cvs.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const W = cvs.width, H = cvs.height;
+
+    // ----- Game state -----
+    let running = false, gameOver = false, frame = 0, lastT = 0;
+    let score = 0, best = +localStorage.getItem('flappy_best') || 0;
+    bestEl.textContent = best;
+
+    const world = {
+      gravity: 1400,        // px/s^2
+      jumpVel: -380,        // px/s upward impulse
+      pipeGap: 160,         // vertical gap size
+      pipeW: 70,            // pipe width
+      pipeMin: 80,          // min top pipe height
+      pipeMax: H - 200,     // max top pipe height
+      pipeEvery: 1300,      // ms between spawns
+      speed: 170,           // px/s pipe speed
+      groundH: 70
+    };
+
+    const bird = {
+      x: 100,
+      y: H * 0.45,
+      r: 16,
+      vy: 0,
+      rot: 0,
+      alive: true
+    };
+
+    /** Pipes: each is {x, topH} representing top pipe height; bottom pipe starts after gap */
+    const pipes = [];
+    let spawnTimer = 0;
+
+    // ----- Helpers -----
+    const rnd = (a,b) => Math.random()*(b-a)+a;
+
+    function reset() {
+      bird.x = 100; bird.y = H*0.45; bird.vy = 0; bird.rot = 0; bird.alive = true;
+      pipes.length = 0; spawnTimer = 0; frame = 0; score = 0; running = true; gameOver = false;
+      scoreEl.textContent = '0';
+    }
+
+    // Input: space / click / tap
+    function flap() {
+      if (!running) running = true;
+      if (gameOver) { reset(); return; }
+      bird.vy = world.jumpVel;
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space') { e.preventDefault(); flap(); }
+      if (e.code === 'KeyR') { reset(); }
+    });
+    cvs.addEventListener('pointerdown', flap);
+    resetBtn.addEventListener('click', () => reset());
+
+    // ----- Update & Draw -----
+    function update(dt) {
+      if (!running || gameOver) return;
+      frame++;
+
+      // Bird physics
+      bird.vy += world.gravity * dt;
+      bird.y += bird.vy * dt;
+      bird.rot = Math.atan2(bird.vy, 260);
+
+      // Spawn pipes
+      spawnTimer += dt*1000;
+      if (spawnTimer >= world.pipeEvery) {
+        spawnTimer = 0;
+        const topH = Math.floor(rnd(world.pipeMin, world.pipeMax));
+        pipes.push({ x: W + world.pipeW, topH, passed:false });
+      }
+
+      // Move pipes & handle scoring
+      for (let i = pipes.length - 1; i >= 0; i--) {
+        const p = pipes[i];
+        p.x -= world.speed * dt;
+        if (!p.passed && p.x + world.pipeW < bird.x - bird.r) {
+          p.passed = true;
+          score++;
+          scoreEl.textContent = score;
+          if (score > best) { best = score; localStorage.setItem('flappy_best', best); bestEl.textContent = best; }
+        }
+        if (p.x + world.pipeW < 0) pipes.splice(i,1);
+      }
+
+      // Collisions: ground/sky
+      const groundY = H - world.groundH;
+      if (bird.y + bird.r >= groundY) { bird.y = groundY - bird.r; endGame(); }
+      if (bird.y - bird.r <= 0) { bird.y = bird.r; bird.vy = 0; }
+
+      // Collisions: pipes (AABB circle vs rectangles)
+      for (const p of pipes) {
+        // Top pipe rect: (p.x, 0, pipeW, p.topH)
+        // Bottom pipe rect: (p.x, p.topH + pipeGap, pipeW, groundY - (p.topH + pipeGap))
+        if (circleRectCollide(bird.x, bird.y, bird.r, p.x, 0, world.pipeW, p.topH) ||
+            circleRectCollide(bird.x, bird.y, bird.r, p.x, p.topH + world.pipeGap, world.pipeW, groundY - (p.topH + world.pipeGap))) {
+          endGame();
+        }
+      }
+    }
+
+    function endGame(){
+      if (!gameOver){
+        gameOver = true; running = false; bird.alive = false; 
+      }
+    }
+
+    function circleRectCollide(cx, cy, cr, rx, ry, rw, rh) {
+      const nx = Math.max(rx, Math.min(cx, rx + rw));
+      const ny = Math.max(ry, Math.min(cy, ry + rh));
+      const dx = cx - nx, dy = cy - ny;
+      return (dx*dx + dy*dy) <= cr*cr;
+    }
+
+    function draw() {
+      // Sky gradient background already handled by CSS; draw parallax hills & ground
+      ctx.clearRect(0,0,W,H);
+
+      // Subtle clouds
+      ctx.globalAlpha = 0.7;
+      drawCloud(60 + (frame*0.3)% (W+120), 90, 26);
+      drawCloud(260 + (frame*0.2)% (W+220), 140, 20);
+      ctx.globalAlpha = 1;
+
+      // Pipes
+      for (const p of pipes) {
+        drawPipe(p.x, 0, world.pipeW, p.topH);
+        drawPipe(p.x, p.topH + world.pipeGap, world.pipeW, H - world.groundH - (p.topH + world.pipeGap));
+      }
+
+      // Ground
+      drawGround();
+
+      // Bird
+      drawBird();
+
+      // UI overlays
+      if (!running && !gameOver) drawCenterText('Tap/Space to start', 28);
+      if (gameOver) drawCenterText('Game Over — Tap/Space to restart', 24, true);
+    }
+
+    function drawBird(){
+      const {x,y,r,rot} = bird;
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.rotate(rot*0.6);
+      // body
+      ctx.fillStyle = '#fde68a';
+      roundRect(ctx, -r, -r*0.8, r*2, r*1.6, 10); ctx.fill();
+      // wing
+      ctx.fillStyle = '#f59e0b';
+      roundRect(ctx, -r*0.6, -r*0.35, r*1.2, r*0.7, 8); ctx.fill();
+      // eye
+      ctx.beginPath(); ctx.fillStyle = '#fff'; ctx.arc(r*0.2, -r*0.2, r*0.35, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle = '#111827'; ctx.arc(r*0.35, -r*0.2, r*0.15, 0, Math.PI*2); ctx.fill();
+      // beak
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath(); ctx.moveTo(r*0.9, 0); ctx.lineTo(r*1.5, r*0.15); ctx.lineTo(r*0.9, r*0.3); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPipe(x,y,w,h){
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.fillStyle = '#22c55e';
+      roundRect(ctx, 0, 0, w, h, 10); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.25)';
+      roundRect(ctx, 6, 6, w-12, h-12, 8); ctx.fill();
+      // cap
+      ctx.fillStyle = '#16a34a';
+      roundRect(ctx, -4, h-10, w+8, 16, 8); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawGround(){
+      const gY = H - world.groundH;
+      ctx.fillStyle = '#0b1228';
+      ctx.fillRect(0, gY, W, world.groundH);
+      // scrolling stripes
+      ctx.fillStyle = 'rgba(255,255,255,.08)';
+      const off = (frame*4) % 40;
+      for (let x = -40 + off; x < W; x += 40) ctx.fillRect(x, gY+8, 20, 8);
+    }
+
+    function drawCloud(cx, cy, r){
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.arc(cx-r, cy+6, r*0.75, 0, Math.PI*2);
+      ctx.arc(cx+r, cy+10, r*0.8, 0, Math.PI*2);
+      ctx.arc(cx+r*0.2, cy-8, r*0.9, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y,   x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x,   y+h, rr);
+      ctx.arcTo(x,   y+h, x,   y,   rr);
+      ctx.arcTo(x,   y,   x+w, y,   rr);
+      ctx.closePath();
+    }
+
+    function drawCenterText(text, size=28, red=false){
+      ctx.save();
+      ctx.font = `700 ${size}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = red ? '#ef4444' : '#111827';
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(text, W/2, H*0.35);
+      ctx.restore();
+    }
+
+    // Main loop
+    function loop(ts){
+      const dt = Math.min((ts - lastT)/1000 || 0, 0.033); // clamp dt
+      lastT = ts;
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
