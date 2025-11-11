@@ -1,0 +1,6 @@
+        ◉ BAASIR@DEVELOPER-TERMINAL:~$ v2.0 | SYSTEM READY ◉
+      </div>
+    </div>
+
+    <div id="terminal">
+      <div id="output">

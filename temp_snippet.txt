@@ -1,0 +1,13 @@
+
+    .status-online {
+      background: var(--primary-green);
+    }
+
+    .status-busy {
+      background: var(--yellow);
+    }
+
+    .status-away {
+      background: var(--accent-purple);
+    }
+

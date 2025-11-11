@@ -1,0 +1,41 @@
+
+    commandInput.addEventListener('input', function () {
+      this.style.boxShadow = '0 0 15px rgba(0, 255, 136, 0.6)';
+      this.style.textShadow = '0 0 8px var(--primary-green)';
+      setTimeout(() => {
+        this.style.boxShadow = 'none';
+        this.style.textShadow = '0 0 5px var(--primary-green)';
+      }, 150);
+    });
+
+    commandInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        const cmd = this.value.trim().toLowerCase();
+        this.value = '';
+
+        if (cmd && commandHistory[commandHistory.length - 1] !== cmd) {
+          commandHistory.push(cmd);
+        }
+        historyIndex = commandHistory.length;
+
+        output.innerHTML += `<div class="cmd">baasir@dev:~$ ${cmd}</div>`;
+
+        if (cmd === 'clear') 
+        {
+          output.innerHTML = '<span style="color: grey;"> Type `help` to see commands <br> Enjoy your stay! 🚀</span>';
+        } 
+        else if (commands[cmd]) {
+          output.innerHTML += `<div class="response">${commands[cmd]}</div>`;
+        } else if (cmd.includes('sudo') || cmd.includes('rm -rf') || cmd.includes('/')) {
+          output.innerHTML += `<div class="response" style="color: var(--red);">
+            ⚠️ SECURITY ALERT: Potential malicious command detected<br>
+            🛡️ System protection enabled.
+          </div>`;
+        }else if (cmd.includes('hi') || cmd.includes('hello') || cmd.includes('hey') || cmd.includes('yo')){
+            output.innerHTML += "Greetings and Salutations"
+        }
+        else if (cmd.includes('art')) {
+        output.innerHTML = "";
+        output.innerHTML += `<pre class="ascii-banner">
+                                                                                                                                                                                                                                     
+                                                                                                                                                                                                                                     

@@ -1,0 +1,7 @@
+          </h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div>
+              <strong style="color: var(--accent-cyan);">>>> ENCRYPTED_PROTOCOLS</strong>
+              <div style="margin-top: 1rem;">
+                <div style="margin-bottom: 0.75rem;">
